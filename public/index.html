@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Vibe Messenger</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07090f;--bg2:#0d1017;--bg3:#12161f;--bg4:#181d28;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --text:#e8eaf6;--text2:#8892a4;--text3:rgba(255,255,255,0.2);
+  --accent:#4fc3f7;--accent2:#1976d2;--danger:#ff6b6b;--success:#81c784;
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;height:100vh;overflow:hidden}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:4px}
+input,textarea,button{font-family:'DM Sans',sans-serif}
+input::placeholder,textarea::placeholder{color:var(--text3)}
+textarea{resize:none}
+.hidden{display:none!important}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes pulse{0%,100%{opacity:.6}50%{opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes msgIn{from{opacity:0;transform:scale(.95) translateY(6px)}to{opacity:1;transform:scale(1) translateY(0)}}
+#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse at 20% 50%,#0f1a2e 0%,transparent 60%),var(--bg)}
+.auth-card{width:400px;background:rgba(13,16,23,0.9);backdrop-filter:blur(30px);border:1px solid var(--border2);border-radius:24px;padding:44px 40px;box-shadow:0 40px 100px rgba(0,0,0,0.7);animation:fadeUp .5s ease}
+.auth-logo{text-align:center;margin-bottom:32px}
+.auth-logo h1{font-family:'Syne',sans-serif;font-weight:800;font-size:32px;letter-spacing:-1px;background:linear-gradient(135deg,#4fc3f7,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.auth-tabs{display:flex;gap:6px;margin-bottom:28px;background:rgba(255,255,255,0.04);border-radius:12px;padding:4px}
+.auth-tab{flex:1;padding:10px;background:none;border:none;color:var(--text2);cursor:pointer;border-radius:9px;font-size:13px;font-weight:600;transition:all .2s}
+.auth-tab.active{background:rgba(79,195,247,0.15);color:var(--accent);border:1px solid rgba(79,195,247,0.3)}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:11px;letter-spacing:1.5px;color:var(--text2);margin-bottom:7px;text-transform:uppercase;font-weight:600}
+.field input{width:100%;padding:12px 16px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s}
+.field input:focus{border-color:var(--accent)}
+.field input.pfx{padding-left:30px}
+.field .prefix{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--accent);font-weight:700;pointer-events:none}
+.field .pw{position:relative}
+.field .err{font-size:12px;color:var(--danger);margin-top:5px}
+.btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:12px;color:#fff;font-weight:700;font-size:15px;cursor:pointer;font-family:'Syne',sans-serif;box-shadow:0 8px 24px rgba(79,195,247,0.25);transition:opacity .2s}
+.btn:hover{opacity:.88}
+.btn.secondary{background:rgba(255,255,255,0.07);border:1px solid var(--border);box-shadow:none;color:var(--text)}
+.btn.danger{background:linear-gradient(135deg,#ff6b6b,#c0392b);box-shadow:0 8px 24px rgba(255,107,107,0.2)}
+.global-err{text-align:center;color:var(--danger);font-size:13px;margin-bottom:14px}
+.global-ok{text-align:center;color:var(--success);font-size:13px;margin-bottom:14px}
+.auth-switch{text-align:center;margin-top:20px;font-size:13px;color:var(--text2)}
+.auth-switch span{color:var(--accent);cursor:pointer;font-weight:600}
+#app{display:flex;height:100vh}
+#sidebar{width:310px;min-width:310px;border-right:1px solid var(--border);display:flex;flex-direction:column;background:rgba(255,255,255,0.01)}
+.sidebar-header{padding:18px 16px 12px;border-bottom:1px solid var(--border)}
+.sidebar-me{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.sidebar-me-info{flex:1;min-width:0}
+.sidebar-me-name{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidebar-me-user{font-size:11px;color:var(--text2)}
+.sidebar-tabs{display:flex;gap:4px;margin-bottom:12px}
+.sidebar-tab{flex:1;padding:8px 4px;background:none;border:none;color:var(--text2);cursor:pointer;border-radius:9px;font-size:12px;font-weight:600;transition:all .2s}
+.sidebar-tab.active{background:rgba(79,195,247,0.12);color:var(--accent)}
+.sidebar-tab:hover:not(.active){background:rgba(255,255,255,0.05)}
+.search-bar{position:relative}
+.search-bar input{width:100%;padding:10px 14px 10px 38px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:13px;outline:none}
+.search-bar input:focus{border-color:var(--accent)}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);pointer-events:none}
+#chat-list{flex:1;overflow-y:auto}
+.chat-item{display:flex;align-items:center;gap:11px;padding:11px 16px;cursor:pointer;border-left:3px solid transparent;transition:all .15s}
+.chat-item:hover{background:rgba(255,255,255,0.04)}
+.chat-item.active{background:rgba(79,195,247,0.07);border-left-color:var(--accent)}
+.chat-item-info{flex:1;min-width:0}
+.chat-item-top{display:flex;justify-content:space-between;margin-bottom:3px}
+.chat-item-name{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-item-time{font-size:11px;color:var(--text3);flex-shrink:0;margin-left:6px}
+.chat-item-preview{font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.unread-badge{background:var(--accent);color:#07090f;border-radius:10px;font-size:11px;font-weight:800;padding:2px 7px;flex-shrink:0}
+#search-panel{flex:1;overflow-y:auto;padding:12px 16px}
+.search-result{display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:13px;cursor:pointer;transition:background .15s;margin-bottom:8px}
+.search-result:hover{background:rgba(255,255,255,0.08)}
+.avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;font-family:'Syne',sans-serif;position:relative;border:2px solid rgba(255,255,255,0.1)}
+.online-dot{position:absolute;bottom:0;right:0;width:11px;height:11px;border-radius:50%;background:#81c784;border:2px solid var(--bg)}
+.icon-btn{background:none;border:none;color:var(--text2);cursor:pointer;padding:7px 9px;border-radius:9px;font-size:17px;transition:background .15s;line-height:1}
+.icon-btn:hover{background:rgba(255,255,255,0.08)}
+#chat-area{flex:1;display:flex;flex-direction:column;min-width:0}
+#empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text3);gap:12px}
+#empty-state h2{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;background:linear-gradient(135deg,#4fc3f7,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+#chat-header{padding:13px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:13px;background:rgba(255,255,255,0.01);flex-shrink:0}
+#chat-header-info{flex:1;min-width:0}
+#chat-header-name{font-family:'Syne',sans-serif;font-weight:700;font-size:15px}
+#chat-header-status{font-size:12px;color:var(--text2);margin-top:1px}
+#chat-header-status.online{color:var(--success)}
+#chat-header-status.typing{color:var(--accent);animation:pulse 1s infinite}
+#messages-wrap{flex:1;overflow-y:auto;padding:20px 20px 8px;display:flex;flex-direction:column;gap:3px}
+.msg-date{text-align:center;margin:14px 0 8px}
+.msg-date span{font-size:11px;color:var(--text2);background:rgba(255,255,255,0.06);padding:4px 12px;border-radius:20px}
+.msg-row{display:flex;justify-content:flex-end;align-items:flex-end;gap:8px;animation:msgIn .2s ease}
+.msg-row.them{justify-content:flex-start}
+.bubble-wrap{max-width:64%;display:flex;flex-direction:column}
+.bubble-wrap.them{align-items:flex-start}
+.bubble-wrap.me{align-items:flex-end}
+.bubble{padding:10px 14px;border-radius:18px;font-size:14px;line-height:1.6;word-break:break-word;cursor:context-menu}
+.bubble.me{border-radius:18px 18px 4px 18px;color:#fff}
+.bubble.them{border-radius:18px 18px 18px 4px;background:var(--bg4);border:1px solid var(--border);color:var(--text)}
+.bubble.deleted{opacity:.45;font-style:italic;cursor:default}
+.bubble-meta{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text3);margin-top:3px}
+.bubble-meta.me{justify-content:flex-end;padding-right:4px}
+.bubble-meta.them{padding-left:4px}
+.read-tick{color:var(--accent)}
+.ctx-menu{position:fixed;background:var(--bg3);border:1px solid var(--border2);border-radius:12px;padding:6px;z-index:1000;box-shadow:0 16px 48px rgba(0,0,0,.6);min-width:150px;animation:fadeIn .15s ease}
+.ctx-item{padding:9px 14px;border-radius:8px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:9px;transition:background .1s}
+.ctx-item:hover{background:rgba(255,255,255,0.07)}
+.ctx-item.danger{color:var(--danger)}
+.ctx-item.danger:hover{background:rgba(255,107,107,0.1)}
+#input-area{padding:14px 20px;border-top:1px solid var(--border);flex-shrink:0}
+.reply-preview{display:flex;align-items:center;gap:10px;padding:8px 14px;background:rgba(79,195,247,0.08);border:1px solid rgba(79,195,247,0.2);border-radius:10px;margin-bottom:10px;font-size:13px;color:var(--text2)}
+.reply-preview strong{color:var(--accent)}
+.reply-cancel{margin-left:auto;cursor:pointer;color:var(--text3);font-size:16px}
+.reply-cancel:hover{color:var(--danger)}
+.input-wrap{display:flex;align-items:flex-end;gap:10px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:18px;padding:8px 8px 8px 16px;transition:border-color .2s}
+.input-wrap:focus-within{border-color:rgba(79,195,247,0.4)}
+#msg-input{flex:1;background:none;border:none;color:var(--text);font-size:14px;line-height:1.6;max-height:130px;overflow-y:auto;outline:none}
+.input-hint{font-size:11px;color:var(--text3);text-align:center;margin-top:6px}
+.send-btn{width:38px;height:38px;border-radius:12px;border:none;background:rgba(255,255,255,0.07);color:var(--text3);cursor:pointer;font-size:16px;transition:all .2s;flex-shrink:0}
+.send-btn.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 4px 16px rgba(79,195,247,0.35)}
+.send-btn.active:hover{transform:scale(1.06)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center;animation:fadeIn .2s ease}
+.modal{width:440px;max-width:95vw;max-height:90vh;overflow-y:auto;background:var(--bg2);border:1px solid var(--border2);border-radius:22px;padding:32px;box-shadow:0 32px 80px rgba(0,0,0,.7);animation:fadeUp .3s ease}
+.modal h2{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;margin-bottom:22px;display:flex;align-items:center;gap:10px}
+.modal-close{margin-left:auto;background:none;border:none;color:var(--text2);cursor:pointer;font-size:20px;padding:2px 6px;border-radius:6px}
+.modal-close:hover{background:rgba(255,255,255,.07);color:var(--text)}
+.modal-section{margin-bottom:24px}
+.modal-section h3{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text2);font-weight:700;margin-bottom:14px}
+.color-grid{display:flex;gap:8px;flex-wrap:wrap}
+.color-dot{width:32px;height:32px;border-radius:50%;cursor:pointer;transition:transform .15s;border:2px solid transparent}
+.color-dot:hover{transform:scale(1.15)}
+.color-dot.selected{border-color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.15)}
+.profile-header{display:flex;align-items:center;gap:16px;margin-bottom:24px;padding:20px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:16px}
+.divider{height:1px;background:var(--border);margin:20px 0}
+#loader{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:14px}
+.spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.1);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+#toast-container{position:fixed;bottom:24px;right:24px;z-index:9000;display:flex;flex-direction:column;gap:8px}
+.toast{padding:12px 18px;border-radius:12px;font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:fadeUp .3s ease;max-width:300px}
+.toast.success{background:#1b3a1e;border:1px solid #81c784;color:#a5d6a7}
+.toast.error{background:#3a1b1b;border:1px solid #ff6b6b;color:#ff8a80}
+.toast.info{background:#1a2535;border:1px solid #4fc3f7;color:#80d8ff}
+.typing-dots{display:flex;gap:4px;align-items:center;padding:10px 14px;background:var(--bg4);border:1px solid var(--border);border-radius:18px 18px 18px 4px;width:fit-content}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--text2);animation:pulse .9s infinite}
+.dot:nth-child(2){animation-delay:.2s}
+.dot:nth-child(3){animation-delay:.4s}
+@media(max-width:680px){
+  #sidebar{position:absolute;top:0;bottom:0;left:0;z-index:20;box-shadow:4px 0 30px rgba(0,0,0,.5)}
+  #sidebar.mobile-hidden{transform:translateX(-100%)}
+  .auth-card{width:95vw;padding:32px 24px}
+}
+</style>
+</head>
+<body>
+<div id="loader"><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:28px;background:linear-gradient(135deg,#4fc3f7,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent">VIBE</div><div class="spinner"></div></div>
+<div id="auth-screen" class="hidden">
+  <div class="auth-card">
+    <div class="auth-logo"><div style="font-size:40px;margin-bottom:10px">💬</div><h1>VIBE</h1><p style="color:var(--text2);font-size:13px;margin-top:4px">Мессенджер без лишнего</p></div>
+    <div class="auth-tabs"><button class="auth-tab active" onclick="switchTab('login')">Войти</button><button class="auth-tab" onclick="switchTab('register')">Регистрация</button></div>
+    <div id="auth-global-err" class="global-err hidden"></div>
+    <div id="auth-global-ok" class="global-ok hidden"></div>
+    <div id="login-form">
+      <div class="field"><label>Username</label><div class="pw" style="position:relative"><span class="prefix">@</span><input id="l-username" type="text" class="pfx" placeholder="yourname" autocapitalize="none"/></div><div class="err hidden" id="l-username-err"></div></div>
+      <div class="field"><label>Пароль</label><input id="l-password" type="password" placeholder="••••••••"/><div class="err hidden" id="l-password-err"></div></div>
+      <button class="btn" onclick="doLogin()">Войти</button>
+    </div>
+    <div id="register-form" class="hidden">
+      <div class="field"><label>Username (мин. 4, латиница+цифры)</label><div style="position:relative"><span class="prefix">@</span><input id="r-username" type="text" class="pfx" placeholder="yourname" autocapitalize="none" oninput="this.value=this.value.replace(/[^a-zA-Z0-9]/g,'')"/></div><div class="err hidden" id="r-username-err"></div></div>
+      <div class="field"><label>Никнейм</label><input id="r-nickname" type="text" placeholder="Твоё имя"/><div class="err hidden" id="r-nickname-err"></div></div>
+      <div class="field"><label>Пароль</label><input id="r-password" type="password" placeholder="минимум 4 символа"/><div class="err hidden" id="r-password-err"></div></div>
+      <div class="field"><label>Подтвердить пароль</label><input id="r-password2" type="password" placeholder="••••••••"/><div class="err hidden" id="r-password2-err"></div></div>
+      <button class="btn" onclick="doRegister()">Создать аккаунт</button>
+    </div>
+    <div class="auth-switch"><span id="auth-switch-text"></span><span id="auth-switch-link"></span></div>
+  </div>
+</div>
+<div id="app" class="hidden">
+  <div id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-me">
+        <div class="avatar" id="my-avatar" style="width:38px;height:38px;font-size:13px"></div>
+        <div class="sidebar-me-info"><div class="sidebar-me-name" id="my-nickname"></div><div class="sidebar-me-user" id="my-username"></div></div>
+        <div style="display:flex;gap:4px"><button class="icon-btn" onclick="openSettings()">⚙️</button><button class="icon-btn" onclick="doLogout()">⏻</button></div>
+      </div>
+      <div class="sidebar-tabs"><button class="sidebar-tab active" id="tab-chats" onclick="switchSideTab('chats')">💬 Чаты</button><button class="sidebar-tab" id="tab-search" onclick="switchSideTab('search')">🔍 Найти</button></div>
+      <div id="search-bar-wrap" class="search-bar hidden"><span class="search-icon">🔍</span><input id="search-input" type="text" placeholder="@username..." autocapitalize="none" oninput="this.value=this.value.replace(/[^a-zA-Z0-9]/g,'');doSearch()"/></div>
+    </div>
+    <div id="chat-list"></div>
+    <div id="search-panel" class="hidden"></div>
+  </div>
+  <div id="chat-area">
+    <div id="empty-state"><div style="font-size:56px">💬</div><h2>VIBE</h2><p style="font-size:13px;color:var(--text2)">Выбери чат или найди пользователя</p></div>
+    <div id="chat-header" class="hidden">
+      <button class="icon-btn" id="back-btn" onclick="closeChatMobile()" style="display:none">←</button>
+      <div class="avatar" id="ch-avatar" style="width:40px;height:40px;font-size:14px"></div>
+      <div id="chat-header-info"><div id="chat-header-name"></div><div id="chat-header-status"></div></div>
+      <button class="icon-btn" onclick="openPartnerProfile()">👤</button>
+    </div>
+    <div id="messages-wrap" class="hidden"></div>
+    <div id="input-area" class="hidden">
+      <div id="reply-preview" class="reply-preview hidden"><div>✏️ Редактирование: <strong id="reply-text-preview"></strong></div><span class="reply-cancel" onclick="cancelEdit()">✕</span></div>
+      <div class="input-wrap"><textarea id="msg-input" rows="1" placeholder="Написать сообщение..." oninput="autoGrow(this);updateSendBtn()" onkeydown="handleInputKey(event)"></textarea><button class="send-btn" id="send-btn" onclick="sendMessage()">➤</button></div>
+      <div class="input-hint">Enter — отправить · Shift+Enter — новая строка</div>
+    </div>
+  </div>
+</div>
+<div id="toast-container"></div>
+<div id="ctx-menu" class="ctx-menu hidden"></div>
+<div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal(event)"><div class="modal" onclick="event.stopPropagation()"><div id="modal-content"></div></div></div>
+<script>
+let token=localStorage.getItem('vibe_token'),me=null,partner=null,ws=null,conversations=[],messages={},typingTimers={},editingMsgId=null,presenceMap={};
+const API=(path,opts={})=>fetch(path,{headers:{'Content-Type':'application/json',...(token?{'Authorization':'Bearer '+token}:{})},        ...opts}).then(r=>r.json());
+async function init(){
+  if(token){const user=await API('/api/me');if(user.error){token=null;localStorage.removeItem('vibe_token');showAuth();hide('loader');return;}me=user;showApp();}
+  else showAuth();
+  hide('loader');
+}
+function showAuth(){show('auth-screen');hide('app');updateAuthSwitch('login');}
+function showApp(){hide('auth-screen');show('app');renderMe();connectWS();loadConversations();}
+function renderMe(){setAvatar('my-avatar',me.username,me.avatar_color);el('my-nickname').textContent=me.nickname;el('my-username').textContent='@'+me.username;}
+let authMode='login';
+function switchTab(mode){authMode=mode;el('login-form').classList.toggle('hidden',mode!=='login');el('register-form').classList.toggle('hidden',mode!=='register');document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&mode==='login')||(i===1&&mode==='register')));hideGlobalErr();updateAuthSwitch(mode);}
+function updateAuthSwitch(mode){el('auth-switch-text').textContent=mode==='login'?'Нет аккаунта? ':'Уже есть аккаунт? ';const l=el('auth-switch-link');l.textContent=mode==='login'?'Создать':'Войти';l.onclick=()=>switchTab(mode==='login'?'register':'login');}
+async function doLogin(){
+  const username=el('l-username').value.trim().toLowerCase(),password=el('l-password').value;
+  if(!username||!password){showGlobalErr('Заполни все поля');return;}
+  const res=await API('/api/login',{method:'POST',body:JSON.stringify({username,password})});
+  if(res.error){showGlobalErr(res.error);return;}
+  token=res.token;localStorage.setItem('vibe_token',token);me=res.user;hideGlobalErr();showApp();
+}
+async function doRegister(){
+  const username=el('r-username').value.trim().toLowerCase(),nickname=el('r-nickname').value.trim(),password=el('r-password').value,password2=el('r-password2').value;
+  clearFieldErrs();let ok=true;
+  if(!/^[a-zA-Z0-9]{4,20}$/.test(username)){showFieldErr('r-username','Мин. 4 символа, только латиница и цифры');ok=false;}
+  if(!nickname||nickname.length>30){showFieldErr('r-nickname','Обязательное поле');ok=false;}
+  if(password.length<4){showFieldErr('r-password','Минимум 4 символа');ok=false;}
+  if(password!==password2){showFieldErr('r-password2','Пароли не совпадают');ok=false;}
+  if(!ok)return;
+  const res=await API('/api/register',{method:'POST',body:JSON.stringify({username,nickname,password})});
+  if(res.error){showGlobalErr(res.error);return;}
+  token=res.token;localStorage.setItem('vibe_token',token);me=res.user;hideGlobalErr();showApp();
+}
+function doLogout(){token=null;me=null;partner=null;localStorage.removeItem('vibe_token');if(ws)ws.close();hide('app');showAuth();toast('До свидания! 👋','info');}
+function connectWS(){
+  const proto=location.protocol==='https:'?'wss':'ws';
+  ws=new WebSocket(`${proto}://${location.host}`);
+  ws.onopen=()=>ws.send(JSON.stringify({type:'auth',token}));
+  ws.onmessage=({data})=>{
+    const msg=JSON.parse(data);
+    if(msg.type==='message'){const other=msg.from===me.username?msg.to:msg.from;if(!messages[other])messages[other]=[];messages[other].push(msg);if(partner&&partner.username===other){renderMessages();ws.send(JSON.stringify({type:'read',partner:other}));}updateConvList(msg,other);}
+    if(msg.type==='edit'){for(const k of Object.keys(messages)){const i=messages[k].findIndex(m=>m.id===msg.id);if(i!==-1){messages[k][i].text=msg.text;messages[k][i].edited=true;}}if(partner)renderMessages();}
+    if(msg.type==='delete'){for(const k of Object.keys(messages)){const i=messages[k].findIndex(m=>m.id===msg.id);if(i!==-1){messages[k][i].deleted=true;messages[k][i].text='';}}if(partner)renderMessages();}
+    if(msg.type==='read'){if(partner&&msg.by===partner.username){if(messages[partner.username])messages[partner.username].filter(m=>m.from===me.username).forEach(m=>m.read_at=Date.now());renderMessages();}}
+    if(msg.type==='presence'){presenceMap[msg.username]={online:msg.online,last_seen:msg.last_seen};if(partner&&partner.username===msg.username)updateChatStatus();renderConvList();}
+    if(msg.type==='typing'){if(partner&&msg.from===partner.username){clearTimeout(typingTimers[msg.from]);if(msg.active){showTyping(true);typingTimers[msg.from]=setTimeout(()=>showTyping(false),3000);}else showTyping(false);}}
+  };
+  ws.onclose=()=>setTimeout(connectWS,2000);
+}
+async function loadConversations(){const data=await API('/api/conversations');if(!Array.isArray(data))return;conversations=data;renderConvList();}
+function renderConvList(){
+  const list=el('chat-list');
+  if(!conversations.length){list.innerHTML='<div style="padding:24px;text-align:center;color:var(--text3);font-size:13px">Нет чатов.<br>Найди кого-нибудь 🔍</div>';return;}
+  list.innerHTML=conversations.map(c=>{
+    const p=c.partner,isOnline=(presenceMap[p.username]||{}).online??p.online,isActive=partner&&partner.username===p.username;
+    const prev=(c.deleted?'🚫 Удалено':(c.from_user===me.username?'Ты: ':'')+((c.text||'').slice(0,40)));
+    return`<div class="chat-item${isActive?' active':''}" onclick="openChat('${p.username}')"><div class="avatar" style="width:44px;height:44px;font-size:15px;background:${p.avatar_color}22;border-color:${p.avatar_color}44;color:${p.avatar_color}">${p.username[0].toUpperCase()}${isOnline?'<div class="online-dot"></div>':''}</div><div class="chat-item-info"><div class="chat-item-top"><span class="chat-item-name">${esc(p.nickname||p.username)}</span><span class="chat-item-time">${fmtTime(c.created_at)}</span></div><div style="display:flex;justify-content:space-between;align-items:center"><div class="chat-item-preview">${esc(prev)}</div>${c.unread>0?`<div class="unread-badge">${c.unread}</div>`:''}</div></div></div>`;
+  }).join('');
+}
+function updateConvList(msg,other){const ex=conversations.find(c=>c.partner&&c.partner.username===other);if(ex){ex.text=msg.text;ex.created_at=msg.ts;ex.from_user=msg.from;if(msg.from!==me.username&&!(partner&&partner.username===other))ex.unread=(ex.unread||0)+1;else ex.unread=0;conversations.sort((a,b)=>b.created_at-a.created_at);}else{loadConversations();return;}renderConvList();}
+async function openChat(username){
+  const conv=conversations.find(c=>c.partner&&c.partner.username===username);if(conv)conv.unread=0;renderConvList();
+  const user=await API('/api/users/'+username);if(user.error){toast('Пользователь не найден','error');return;}
+  partner=user;presenceMap[username]={online:user.online,last_seen:user.last_seen};
+  if(!messages[username]){const data=await API('/api/messages/'+username);messages[username]=Array.isArray(data)?data:[];}
+  hide('empty-state');show('chat-header');show('messages-wrap');show('input-area');
+  renderChatHeader();renderMessages();setTimeout(()=>scrollBottom(false),50);
+  if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'read',partner:username}));
+  if(window.innerWidth<=680){el('sidebar').classList.add('mobile-hidden');el('back-btn').style.display='block';}
+  switchSideTab('chats');cancelEdit();
+}
+function closeChatMobile(){el('sidebar').classList.remove('mobile-hidden');el('back-btn').style.display='none';}
+function renderChatHeader(){if(!partner)return;setAvatar('ch-avatar',partner.username,partner.avatar_color);el('chat-header-name').textContent=partner.nickname||partner.username;updateChatStatus();}
+function updateChatStatus(){if(!partner)return;const p=presenceMap[partner.username]||{},isOnline=p.online??partner.online,st=el('chat-header-status');st.className=isOnline?'online':'';st.textContent=isOnline?'● онлайн':('был(а) '+(p.last_seen||partner.last_seen?fmtTimeAgo(p.last_seen||partner.last_seen):'давно'));}
+function showTyping(active){const st=el('chat-header-status');if(active){st.className='typing';st.textContent='Печатает...';}else updateChatStatus();}
+function renderMessages(){
+  if(!partner)return;
+  const wrap=el('messages-wrap'),msgs=messages[partner.username]||[];
+  const myColor=me.avatar_color||'#4fc3f7';
+  let html='',lastDate='';
+  msgs.forEach((m,i)=>{
+    const isMe=m.from===me.username,prev=msgs[i-1];
+    const ms=m.ts||(m.created_at*(m.created_at<9999999999?1000:1));
+    const d=new Date(ms),dateStr=d.toLocaleDateString('ru',{day:'numeric',month:'long'});
+    if(dateStr!==lastDate){html+=`<div class="msg-date"><span>${dateStr}</span></div>`;lastDate=dateStr;}
+    const gap=!prev||prev.from!==m.from,color=isMe?myColor:(partner.avatar_color||'#4fc3f7');
+    const c2=lightenColor(color),timeStr=d.toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'});
+    const readTick=isMe&&m.read_at?'<span class="read-tick">✓✓</span>':isMe?'<span style="opacity:.4">✓</span>':'';
+    const edited=m.edited&&!m.deleted?' <span style="opacity:.5;font-size:10px">(ред.)</span>':'';
+    const content=m.deleted?'🚫 Сообщение удалено':esc(m.text)+edited;
+    html+=`<div class="msg-row${isMe?'':' them'}" style="margin-top:${gap?'10px':'2px'}" data-id="${m.id}">
+      ${!isMe?`<div class="avatar" style="width:28px;height:28px;font-size:10px;visibility:${gap?'visible':'hidden'};background:${color}22;border-color:${color}44;color:${color}">${partner.username[0].toUpperCase()}</div>`:''}
+      <div class="bubble-wrap ${isMe?'me':'them'}">
+        <div class="bubble ${isMe?'me':'them'}${m.deleted?' deleted':''}" style="${isMe?`background:linear-gradient(135deg,${color},${c2})`:''}${!m.deleted?`;cursor:context-menu`:''}" ${!m.deleted?`oncontextmenu="showCtx(event,'${m.id}',${isMe},'${esc2(m.text)}')" ondblclick="${isMe?`startEdit('${m.id}','${esc2(m.text)}')`:''}"`:''}>
+          ${content}
+        </div>
+        <div class="bubble-meta ${isMe?'me':'them'}">${timeStr} ${readTick}</div>
+      </div>
+    </div>`;
+  });
+  wrap.innerHTML=html||'<div style="text-align:center;color:var(--text3);font-size:13px;margin-top:40px">Начни разговор 👋</div>';
+}
+function scrollBottom(smooth=true){const w=el('messages-wrap');w.scrollTo({top:w.scrollHeight,behavior:smooth?'smooth':'instant'});}
+let typingSent=false;
+function handleInputKey(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();return;}
+  if(!typingSent&&ws&&ws.readyState===1&&partner){ws.send(JSON.stringify({type:'typing',to:partner.username,active:true}));typingSent=true;setTimeout(()=>{typingSent=false;if(ws&&ws.readyState===1&&partner)ws.send(JSON.stringify({type:'typing',to:partner.username,active:false}));},2500);}
+}
+function updateSendBtn(){el('send-btn').classList.toggle('active',el('msg-input').value.trim().length>0);}
+function sendMessage(){
+  const text=el('msg-input').value.trim();if(!text||!partner||!ws)return;
+  if(editingMsgId){ws.send(JSON.stringify({type:'edit',id:editingMsgId,text}));cancelEdit();}
+  else ws.send(JSON.stringify({type:'message',to:partner.username,text}));
+  el('msg-input').value='';el('msg-input').style.height='auto';updateSendBtn();setTimeout(scrollBottom,50);
+}
+function autoGrow(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,130)+'px';}
+function showCtx(e,id,isMe,text){
+  e.preventDefault();const menu=el('ctx-menu');
+  menu.innerHTML=`<div class="ctx-item" onclick="copyText('${esc2(text)}')">📋 Копировать</div>${isMe?`<div class="ctx-item" onclick="startEdit('${id}','${esc2(text)}')">✏️ Редактировать</div><div class="ctx-item danger" onclick="deleteMsg('${id}')">🗑 Удалить</div>`:''}`;
+  menu.classList.remove('hidden');
+  menu.style.left=Math.min(e.clientX,window.innerWidth-180)+'px';menu.style.top=Math.min(e.clientY,window.innerHeight-120)+'px';
+  setTimeout(()=>document.addEventListener('click',closeCtx,{once:true}),10);
+}
+function closeCtx(){el('ctx-menu').classList.add('hidden');}
+function copyText(text){navigator.clipboard.writeText(text).then(()=>toast('Скопировано','success'));}
+function startEdit(id,text){editingMsgId=id;el('msg-input').value=text;el('msg-input').focus();autoGrow(el('msg-input'));updateSendBtn();el('reply-preview').classList.remove('hidden');el('reply-text-preview').textContent=text.slice(0,60);}
+function cancelEdit(){editingMsgId=null;el('reply-preview').classList.add('hidden');el('msg-input').value='';el('msg-input').style.height='auto';updateSendBtn();}
+function deleteMsg(id){if(ws)ws.send(JSON.stringify({type:'delete',id}));}
+let searchTimer=null;
+async function doSearch(){
+  const q=el('search-input').value.trim().toLowerCase(),panel=el('search-panel');
+  if(!q){panel.innerHTML='';return;}
+  clearTimeout(searchTimer);
+  searchTimer=setTimeout(async()=>{
+    const res=await API('/api/users/search?q='+encodeURIComponent(q));
+    if(!Array.isArray(res)||res.length===0){panel.innerHTML='<div style="color:var(--text3);font-size:13px;text-align:center;padding:20px">Не найдено</div>';return;}
+    panel.innerHTML=res.map(u=>`<div class="search-result" onclick="openChat('${u.username}');switchSideTab('chats')"><div class="avatar" style="width:42px;height:42px;font-size:14px;background:${u.avatar_color}22;border-color:${u.avatar_color}44;color:${u.avatar_color}">${u.username[0].toUpperCase()}${u.online?'<div class="online-dot"></div>':''}</div><div><div style="font-weight:600;font-size:14px">${esc(u.nickname)}</div><div style="font-size:12px;color:var(--accent)">@${esc(u.username)}</div>${u.bio?`<div style="font-size:12px;color:var(--text2)">${esc(u.bio.slice(0,60))}</div>`:''}</div></div>`).join('');
+  },300);
+}
+const COLORS_LIST=['#4fc3f7','#81c784','#ffb74d','#f06292','#ce93d8','#80cbc4','#ff8a65','#90caf9','#fff176','#a5d6a7','#b39ddb','#ef9a9a'];
+let selectedColor=null;
+function openSettings(){
+  el('modal-content').innerHTML=`<h2>⚙️ Настройки <button class="modal-close" onclick="closeModal()">✕</button></h2>
+  <div class="profile-header"><div class="avatar" id="settings-avatar" style="width:60px;height:60px;font-size:22px"></div><div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px">${esc(me.nickname)}</div><div style="color:var(--text2);font-size:13px">@${me.username}</div></div></div>
+  <div class="modal-section"><h3>Профиль</h3>
+  <div class="field"><label>Никнейм</label><input id="s-nickname" type="text" value="${esc(me.nickname)}" maxlength="30"/><div class="err hidden" id="s-nickname-err"></div></div>
+  <div class="field"><label>О себе</label><textarea id="s-bio" rows="3" maxlength="150" style="width:100%;padding:12px 16px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:14px;outline:none">${esc(me.bio||'')}</textarea></div></div>
+  <div class="modal-section"><h3>Цвет аватара</h3><div class="color-grid">${COLORS_LIST.map(c=>`<div class="color-dot${c===me.avatar_color?' selected':''}" style="background:${c}" data-color="${c}" onclick="selectColor('${c}')"></div>`).join('')}</div></div>
+  <div class="divider"></div>
+  <div class="modal-section"><h3>Сменить пароль</h3>
+  <div class="field"><label>Старый пароль</label><input id="s-oldpw" type="password" placeholder="••••••••"/></div>
+  <div class="field"><label>Новый пароль</label><input id="s-newpw" type="password" placeholder="минимум 4 символа"/><div class="err hidden" id="s-pw-err"></div></div></div>
+  <div style="display:flex;gap:10px"><button class="btn" onclick="saveSettings()">Сохранить</button><button class="btn secondary" style="padding:14px;width:auto;min-width:100px" onclick="closeModal()">Отмена</button></div>
+  <div style="margin-top:12px"><button class="btn danger" onclick="doLogout()" style="opacity:.7">Выйти</button></div>`;
+  setAvatar('settings-avatar',me.username,me.avatar_color);show('modal-overlay');
+}
+function selectColor(c){selectedColor=c;document.querySelectorAll('.color-dot').forEach(d=>d.classList.toggle('selected',d.dataset.color===c));setAvatar('settings-avatar',me.username,c);}
+async function saveSettings(){
+  const nickname=el('s-nickname').value.trim(),bio=el('s-bio').value.trim(),old_password=el('s-oldpw').value,new_password=el('s-newpw').value;
+  if(!nickname||nickname.length>30){el('s-nickname-err').textContent='1–30 символов';show('s-nickname-err');return;}
+  const body={nickname,bio};if(selectedColor)body.avatar_color=selectedColor;if(old_password||new_password){body.old_password=old_password;body.new_password=new_password;}
+  const res=await API('/api/me',{method:'PATCH',body:JSON.stringify(body)});
+  if(res.error){el('s-pw-err').textContent=res.error;show('s-pw-err');return;}
+  me=res;renderMe();if(partner)renderChatHeader();closeModal();toast('Сохранено ✓','success');
+}
+function openPartnerProfile(){
+  if(!partner)return;const p=partner,pr=presenceMap[p.username]||{},isOnline=pr.online??p.online;
+  el('modal-content').innerHTML=`<h2>👤 Профиль <button class="modal-close" onclick="closeModal()">✕</button></h2>
+  <div style="text-align:center;padding:20px 0">
+  <div class="avatar" style="width:72px;height:72px;font-size:26px;margin:0 auto 14px;background:${p.avatar_color}22;border-color:${p.avatar_color}55;color:${p.avatar_color}">${p.username[0].toUpperCase()}</div>
+  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px">${esc(p.nickname)}</div>
+  <div style="color:var(--accent);font-size:14px;margin:4px 0">@${p.username}</div>
+  <div style="color:${isOnline?'var(--success)':'var(--text2)'};font-size:13px">${isOnline?'● Онлайн':'Был(а) '+fmtTimeAgo(pr.last_seen||p.last_seen)}</div>
+  ${p.bio?`<div style="color:var(--text2);font-size:13px;margin-top:12px">${esc(p.bio)}</div>`:''}
+  </div>`;
+  show('modal-overlay');
+}
+function closeModal(e){if(e&&e.target!==el('modal-overlay'))return;hide('modal-overlay');selectedColor=null;}
+function switchSideTab(tab){const s=tab==='search';el('tab-chats').classList.toggle('active',!s);el('tab-search').classList.toggle('active',s);el('chat-list').classList.toggle('hidden',s);el('search-panel').classList.toggle('hidden',!s);el('search-bar-wrap').classList.toggle('hidden',!s);if(s){el('search-input').focus();el('search-input').value='';el('search-panel').innerHTML='';}}
+function setAvatar(id,username,color){const a=el(id);a.style.background=color+'22';a.style.borderColor=color+'55';a.style.color=color;a.textContent=username[0].toUpperCase();}
+function el(id){return document.getElementById(id);}
+function show(id){el(id).classList.remove('hidden');}
+function hide(id){el(id).classList.add('hidden');}
+function esc(s=''){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function esc2(s=''){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"');}
+function showGlobalErr(msg){const e=el('auth-global-err');e.textContent=msg;e.classList.remove('hidden');}
+function hideGlobalErr(){el('auth-global-err').classList.add('hidden');el('auth-global-ok').classList.add('hidden');}
+function showFieldErr(id,msg){const e=el(id+'-err');if(e){e.textContent=msg;e.classList.remove('hidden');}}
+function clearFieldErrs(){document.querySelectorAll('.err').forEach(e=>{e.textContent='';e.classList.add('hidden');});}
+function fmtTime(ts){if(!ts)return'';const ms=ts<9999999999?ts*1000:ts,d=new Date(ms),now=new Date();if(d.toDateString()===now.toDateString())return d.toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'});if(now-d<604800000)return d.toLocaleDateString('ru',{weekday:'short'});return d.toLocaleDateString('ru',{day:'numeric',month:'short'});}
+function fmtTimeAgo(ts){if(!ts)return'давно';const ms=ts<9999999999?ts*1000:ts,diff=Date.now()-ms;if(diff<60000)return'только что';if(diff<3600000)return Math.floor(diff/60000)+' мин назад';if(diff<86400000)return Math.floor(diff/3600000)+' ч назад';return new Date(ms).toLocaleDateString('ru',{day:'numeric',month:'short'});}
+function lightenColor(hex){const n=parseInt(hex.slice(1),16),r=Math.min(255,(n>>16)+40),g=Math.min(255,((n>>8)&0xff)+40),b=Math.min(255,(n&0xff)+40);return'#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');}
+function toast(msg,type='info',dur=3000){const t=document.createElement('div');t.className=`toast ${type}`;t.textContent=msg;el('toast-container').appendChild(t);setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),350);},dur);}
+document.addEventListener('scroll',closeCtx,true);
+window.addEventListener('resize',()=>{if(window.innerWidth>680){el('sidebar').classList.remove('mobile-hidden');el('back-btn').style.display='none';}});
+init();
+</script>
+</body>
+</html>
